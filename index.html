@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Life RPG</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <style>
+    :root {
+      --bg:           #f0f0f0;
+      --card:         #ffffff;
+      --text:         #222222;
+      --text-muted:   #888888;
+      --text-faint:   #aaaaaa;
+      --border:       #dddddd;
+      --border-light: #f0f0f0;
+      --hover:        #fafafa;
+      --progress-bg:  #eeeeee;
+      --accent:       #000000;
+      --accent-fg:    #ffffff;
+      --danger:       #e44444;
+    }
+    body.dark {
+      --bg:           #111111;
+      --card:         #1e1e1e;
+      --text:         #e8e8e8;
+      --text-muted:   #999999;
+      --text-faint:   #555555;
+      --border:       #333333;
+      --border-light: #2a2a2a;
+      --hover:        #252525;
+      --progress-bg:  #333333;
+      --accent:       #ffffff;
+      --accent-fg:    #111111;
+      --danger:       #ff5555;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      padding: 30px 20px;
+      color: var(--text);
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .container { max-width: 560px; margin: 0 auto; }
+
+    /* ── Header ── */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin-bottom: 24px;
+    }
+    h1 { font-size: 28px; }
+    .dark-toggle {
+      position: absolute;
+      right: 0;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: border-color 0.2s;
+    }
+    .dark-toggle:hover { border-color: var(--text-muted); }
+
+    /* ── Goal banner ── */
+    .goal-banner {
+      background: linear-gradient(135deg, #1a1a1a, #444);
+      color: white;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+      display: none;
+    }
+    body.dark .goal-banner { background: linear-gradient(135deg, #2d2d2d, #555); }
+    .goal-banner.visible { display: block; }
+    .goal-banner h2 { font-size: 20px; margin-bottom: 6px; }
+    .goal-banner p  { font-size: 13px; opacity: 0.75; margin-bottom: 14px; }
+    .goal-new-row { display: flex; gap: 8px; justify-content: center; }
+    .goal-new-row input {
+      width: 90px; padding: 7px 10px; border-radius: 8px; border: none;
+      font-size: 14px; text-align: center;
+    }
+    .goal-new-row button {
+      background: white; color: black; border: none; border-radius: 8px;
+      padding: 7px 16px; cursor: pointer; font-size: 13px; font-weight: bold;
+    }
+    .goal-new-row button:hover { background: #eee; }
+
+    /* ── XP Card ── */
+    .xp-card {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 28px;
+      text-align: center;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .level-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent);
+      color: var(--accent-fg);
+      border-radius: 50%;
+      width: 64px; height: 64px;
+      font-size: 26px; font-weight: bold;
+      margin-bottom: 16px;
+    }
+    .xp-row { display: flex; justify-content: space-around; margin-bottom: 16px; }
+    .xp-stat .label {
+      font-size: 11px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
+    }
+    .xp-stat .value { font-size: 22px; font-weight: bold; }
+    .xp-stat .value.clickable {
+      cursor: pointer;
+      border-bottom: 1px dashed var(--border);
+      display: inline-block;
+    }
+    .xp-stat .value.clickable:hover { opacity: 0.7; }
+    .progress-bar {
+      width: 100%; height: 10px; background: var(--progress-bg);
+      border-radius: 999px; overflow: hidden; margin-bottom: 6px;
+    }
+    .progress-fill {
+      height: 100%; background: var(--accent); width: 0%;
+      transition: width 0.4s ease;
+    }
+    .progress-label { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+
+    /* Daily target */
+    .daily-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .daily-label {
+      font-size: 11px; color: var(--text-muted); white-space: nowrap;
+      cursor: pointer; user-select: none;
+    }
+    .daily-label:hover { color: var(--text); }
+    .daily-bar { flex: 1; height: 6px; background: var(--progress-bg); border-radius: 999px; overflow: hidden; }
+    .daily-fill { height: 100%; background: #4caf50; transition: width 0.4s ease; }
+    .daily-pct { font-size: 11px; color: var(--text-muted); min-width: 30px; text-align: right; }
+
+    /* Streak */
+    .streak-row { margin-top: 2px; font-size: 13px; }
+    .streak-badge {
+      display: inline-block; background: #ff9800; color: white;
+      border-radius: 12px; padding: 2px 10px; font-size: 12px; font-weight: bold; margin-left: 4px;
+    }
+
+    /* ── Section title ── */
+    .section-title {
+      font-size: 15px; font-weight: bold;
+      margin-bottom: 10px; margin-top: 4px; color: var(--text);
+    }
+
+    /* ── Today tasks ── */
+    .task {
+      background: var(--card); border-radius: 14px; padding: 14px 18px;
+      margin-bottom: 8px; display: flex; justify-content: space-between;
+      align-items: center; box-shadow: 0 2px 6px rgba(0,0,0,0.04); transition: opacity 0.2s;
+    }
+    .task.done { opacity: 0.45; }
+    .task-left { display: flex; gap: 10px; align-items: center; }
+    .task-left input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent); }
+    .task-name { font-size: 15px; }
+    .task-meta { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .task-xp { font-weight: bold; font-size: 14px; }
+    .task-remove {
+      background: none; border: none; color: var(--text-faint);
+      cursor: pointer; font-size: 20px; padding: 0 2px; line-height: 1;
+    }
+    .task-remove:hover { color: var(--danger); }
+    .empty-state { text-align: center; color: var(--text-faint); padding: 20px 0; font-size: 14px; }
+    .day-reset { text-align: center; margin: 14px 0 24px; }
+    .day-reset button {
+      background: none; border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 20px; font-size: 13px;
+      cursor: pointer; color: var(--text-muted);
+    }
+    .day-reset button:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* ── Library ── */
+    .category {
+      background: var(--card); border-radius: 14px;
+      margin-bottom: 8px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+    .category-header {
+      padding: 14px 18px; cursor: pointer; display: flex;
+      justify-content: space-between; align-items: center;
+      user-select: none; font-weight: 600; font-size: 14px; color: var(--text);
+    }
+    .category-header:hover { background: var(--hover); }
+    .category-arrow { font-size: 11px; color: var(--text-faint); transition: transform 0.2s; }
+    .category-body { display: none; border-top: 1px solid var(--border-light); }
+    .category-body.open { display: block; }
+    .lib-task {
+      padding: 11px 18px; display: flex; justify-content: space-between;
+      align-items: center; border-bottom: 1px solid var(--border-light);
+      font-size: 14px; color: var(--text);
+    }
+    .lib-task:last-child { border-bottom: none; }
+    .lib-task-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .lib-xp { font-size: 13px; color: var(--text-muted); font-weight: bold; }
+    .add-btn {
+      background: var(--accent); color: var(--accent-fg); border: none;
+      border-radius: 8px; width: 28px; height: 28px; font-size: 18px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;
+    }
+    .add-btn:hover { opacity: 0.8; }
+    .add-btn:disabled { opacity: 0.3; cursor: default; }
+
+    /* ── Custom task ── */
+    .custom-card {
+      background: var(--card); border-radius: 14px; padding: 18px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04); margin-bottom: 24px;
+    }
+    .custom-card .inner-label { font-size: 13px; font-weight: 600; margin-bottom: 10px; color: var(--text-muted); }
+    .custom-row { display: flex; gap: 8px; }
+    .custom-row input {
+      flex: 1; padding: 10px 12px; border-radius: 8px;
+      border: 1px solid var(--border); font-size: 14px;
+      background: var(--card); color: var(--text);
+    }
+    .custom-row input:focus { outline: none; border-color: var(--text-muted); }
+    .custom-row input[type="number"] { width: 72px; flex: none; }
+    .custom-row button {
+      background: var(--accent); color: var(--accent-fg);
+      border: none; border-radius: 8px; padding: 10px 16px; cursor: pointer; font-size: 14px;
+    }
+    .custom-row button:hover { opacity: 0.8; }
+
+    /* ── Rewards ── */
+    .rewards-card {
+      background: var(--card); border-radius: 14px; padding: 4px 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04); margin-bottom: 24px;
+    }
+    .reward-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 13px 18px; border-bottom: 1px solid var(--border-light); font-size: 14px;
+    }
+    .reward-item:last-child { border-bottom: none; }
+    .reward-icon { font-size: 22px; width: 28px; text-align: center; }
+    .reward-info { flex: 1; }
+    .reward-name { font-weight: 600; color: var(--text); }
+    .reward-xp   { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+    .reward-status { font-size: 12px; font-weight: bold; text-align: right; }
+    .reward-status.unlocked { color: #2a9d2a; }
+    .reward-status.locked   { color: var(--text-faint); }
+
+    /* ── History ── */
+    .history-card {
+      background: var(--card); border-radius: 14px; padding: 4px 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04); margin-bottom: 24px;
+    }
+    .history-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 18px; border-bottom: 1px solid var(--border-light); font-size: 14px;
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-date { font-size: 12px; color: var(--text-muted); min-width: 52px; }
+    .history-bar-wrap { flex: 1; height: 6px; background: var(--progress-bg); border-radius: 999px; overflow: hidden; }
+    .history-bar-fill { height: 100%; background: var(--accent); border-radius: 999px; }
+    .history-xp { font-weight: bold; font-size: 13px; min-width: 48px; text-align: right; }
+    .history-empty { text-align: center; color: var(--text-faint); padding: 20px; font-size: 13px; }
+
+    /* ── Data actions ── */
+    .data-actions { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+    .data-actions button {
+      background: none; border: 1px solid var(--border); border-radius: 8px;
+      font-size: 12px; color: var(--text-muted); cursor: pointer; padding: 7px 14px; transition: all 0.2s;
+    }
+    .data-actions button:hover { border-color: var(--text-muted); color: var(--text); }
+
+    /* ── Danger zone ── */
+    .reset-all { text-align: center; margin-bottom: 40px; }
+    .reset-all button {
+      background: none; border: 1px solid var(--border); border-radius: 8px;
+      font-size: 12px; color: var(--text-faint); cursor: pointer; padding: 6px 16px; transition: all 0.2s;
+    }
+    .reset-all button:hover { border-color: var(--danger); color: var(--danger); }
+    .reset-all button.confirm-state { border-color: var(--danger); color: white; background: var(--danger); }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #222; color: white;
+      border-radius: 12px; padding: 12px 24px;
+      font-size: 14px; font-weight: 600;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      transition: transform 0.3s ease;
+      z-index: 1000; white-space: nowrap; pointer-events: none;
+    }
+    .toast.show    { transform: translateX(-50%) translateY(0); }
+    .toast.success { background: #2a9d2a; }
+    .toast.levelup { background: #ff9800; }
+    body.dark .toast         { background: #eee; color: #111; }
+    body.dark .toast.success { background: #3ab83a; color: white; }
+    body.dark .toast.levelup { background: #ff9800; color: white; }
+  </style>
+</head>
+
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="app-header">
+    <h1>⚡ Life RPG</h1>
+    <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="Toggle dark mode">🌙</button>
+  </div>
+
+  <!-- Goal reached banner -->
+  <div class="goal-banner" id="goalBanner">
+    <h2>🏆 Goal Reached! Level <span id="goalBannerLevel"></span></h2>
+    <p>You hit your target. Set a new level to keep going.</p>
+    <div class="goal-new-row">
+      <input type="number" id="newGoalInput" placeholder="New level…" min="1" />
+      <button onclick="setNewGoal()">Set Goal</button>
+    </div>
+  </div>
+
+  <!-- XP / Level Card -->
+  <div class="xp-card">
+    <div class="level-badge" id="levelBadge">0</div>
+    <div class="xp-row">
+      <div class="xp-stat">
+        <div class="label">Today's XP</div>
+        <div class="value" id="todayEarned">+0</div>
+      </div>
+      <div class="xp-stat">
+        <div class="label">Total XP</div>
+        <div class="value" id="totalXPDisplay">0</div>
+      </div>
+      <div class="xp-stat">
+        <div class="label">Goal</div>
+        <div class="value clickable" onclick="promptGoal()" title="Click to change">Lv <span id="goalLevelSpan">12</span></div>
+      </div>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-label" id="progressLabel">0 / 250 XP to next level</div>
+    <div class="daily-row">
+      <span class="daily-label" onclick="changeDailyTarget()" title="Click to change">
+        Daily target (<span id="dailyTargetLabel">20</span> XP)
+      </span>
+      <div class="daily-bar">
+        <div class="daily-fill" id="dailyFill" style="width:0%"></div>
+      </div>
+      <span class="daily-pct" id="dailyPct">0%</span>
+    </div>
+    <div class="streak-row" id="streakRow">
+      🔥 <span style="color:var(--text-faint);font-size:13px">No streak yet</span>
+    </div>
+  </div>
+
+  <!-- Today's Plan -->
+  <div class="section-title">📋 Today's Plan</div>
+  <div id="taskList"></div>
+  <div class="empty-state" id="emptyState">Add tasks from the library below.</div>
+
+  <div class="day-reset">
+    <button onclick="resetDay()">✓ End Day &amp; Commit XP</button>
+  </div>
+
+  <!-- Task Library -->
+  <div class="section-title">📚 Task Library</div>
+  <div id="taskLibrary" style="margin-bottom:24px"></div>
+
+  <!-- Custom Task -->
+  <div class="section-title">➕ Custom Task</div>
+  <div class="custom-card">
+    <div class="inner-label">One-off task</div>
+    <div class="custom-row">
+      <input id="taskName" placeholder="Task name"
+             onkeydown="if(event.key==='Enter')addCustomTask()" />
+      <input id="taskXP" type="number" placeholder="XP" min="1"
+             onkeydown="if(event.key==='Enter')addCustomTask()" />
+      <button onclick="addCustomTask()">Add</button>
+    </div>
+  </div>
+
+  <!-- Rewards -->
+  <div class="section-title">🏆 Rewards</div>
+  <div class="rewards-card" id="rewardsList"></div>
+
+  <!-- History -->
+  <div class="section-title">📅 XP History</div>
+  <div class="history-card" id="historyCard"></div>
+
+  <!-- Backup -->
+  <div class="data-actions">
+    <button onclick="exportData()">⬇ Export backup</button>
+    <button onclick="document.getElementById('importFile').click()">⬆ Import backup</button>
+    <input type="file" id="importFile" accept=".json" style="display:none"
+           onchange="importData(event)" />
+  </div>
+
+  <div class="reset-all">
+    <button onclick="resetAll()">reset all data</button>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+
+// ── Task Library ──────────────────────────────────────────────────────────
+
+const TASK_LIBRARY = [
+  {
+    category: "💼 Work / Career",
+    tasks: [
+      { name: "Deep work session (90 min)",   xp: 8   },
+      { name: "Hard project completed",        xp: 30  },
+      { name: "Positive feedback received",    xp: 10  },
+      { name: "Strong quarter",                xp: 75  },
+      { name: "Promotion / major raise",       xp: 300 },
+    ]
+  },
+  {
+    category: "💻 Job Switch",
+    tasks: [
+      { name: "LinkedIn profile updated",          xp: 15  },
+      { name: "Resume tailored for role",          xp: 15  },
+      { name: "Company research session",          xp: 8   },
+      { name: "Cold outreach / coffee chat",       xp: 10  },
+      { name: "Referral secured",                  xp: 25  },
+      { name: "Job application submitted",         xp: 8   },
+      { name: "5 applications in a week",          xp: 20  },
+      { name: "Recruiter / phone screen",          xp: 20  },
+      { name: "Technical screen passed",           xp: 40  },
+      { name: "Behavioral prep session",           xp: 10  },
+      { name: "Mock interview (full loop)",        xp: 20  },
+      { name: "Onsite / final round",              xp: 60  },
+      { name: "Offer received",                    xp: 100 },
+      { name: "Offer negotiated (counter sent)",   xp: 50  },
+      { name: "Offer signed",                      xp: 300 },
+    ]
+  },
+  {
+    category: "💪 Fitness",
+    tasks: [
+      { name: "Workout",                  xp: 10 },
+      { name: "Protein goal hit",         xp: 5  },
+      { name: "7-day consistency streak", xp: 20 },
+      { name: "30-day streak",            xp: 50 },
+    ]
+  },
+  {
+    category: "🎧 DJ",
+    tasks: [
+      { name: "30 min practice",         xp: 5  },
+      { name: "60 min focused practice", xp: 12 },
+      { name: "Learn new concept",       xp: 8  },
+      { name: "Record mix",              xp: 20 },
+      { name: "First clean mix",         xp: 50 },
+    ]
+  },
+  {
+    category: "💰 Investing",
+    tasks: [
+      { name: "Monthly contribution target hit",   xp: 30  },
+      { name: "No emotional trading for month",    xp: 20  },
+      { name: "$35k invested milestone",           xp: 50  },
+      { name: "$50k invested milestone",           xp: 75  },
+      { name: "$75k invested milestone",           xp: 100 },
+      { name: "$100k portfolio milestone",         xp: 200 },
+    ]
+  },
+  {
+    category: "📚 Reading",
+    tasks: [
+      { name: "Read 10 min",           xp: 4  },
+      { name: "Read 20 min",           xp: 7  },
+      { name: "Read 30+ min",          xp: 10 },
+      { name: "Finish 1 chapter",      xp: 10 },
+      { name: "Finish a book",         xp: 40 },
+      { name: "7-day reading streak",  xp: 15 },
+      { name: "30-day reading streak", xp: 40 },
+    ]
+  }
+];
+
+const REWARDS = [
+  { name: "Nice dinner / small reward",  xp: 250,  icon: "🍽️" },
+  { name: "Birkenstock or Sunglasses",   xp: 500,  icon: "🕶️" },
+  { name: "Onitsuka Tiger sneakers",     xp: 900,  icon: "👟" },
+  { name: "On training shoes",           xp: 1300, icon: "🏃" },
+  { name: "TAG Heuer watch",             xp: 2500, icon: "⌚" },
+];
+
+// ── State ─────────────────────────────────────────────────────────────────
+
+function safeParse(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+  catch(e) { return fallback; }
+}
+
+let totalXP        = Number(localStorage.getItem("totalXP"))    || 0;
+let todayTasks     = safeParse("todayTasks", []);
+let history        = safeParse("history",    []);
+let goalLevel      = Number(localStorage.getItem("goalLevel"))   || 12;
+let dailyTarget    = Number(localStorage.getItem("dailyTarget")) || 20;
+let darkMode       = localStorage.getItem("darkMode") === "true";
+let lastDate       = localStorage.getItem("lastDate")            || null;
+let goalCelebrated = safeParse("goalCelebrated", false);
+let prevLevel      = -1;
+
+// ── Startup: apply dark mode & auto-rollover ──────────────────────────────
+
+if (darkMode) {
+  document.body.classList.add("dark");
+  document.getElementById("darkToggle").textContent = "☀️";
+}
+
+(function checkRollover() {
+  const today = getToday();
+  if (lastDate && lastDate !== today && todayTasks.length > 0) {
+    const earned = todayTasks.reduce(function(s, t) { return t.done ? s + t.xp : s; }, 0);
+    addToHistory(lastDate, earned, todayTasks.filter(function(t) { return t.done; }));
+    totalXP   += earned;
+    todayTasks = [];
+  }
+  lastDate = today;
+  localStorage.setItem("lastDate", today);
+})();
+
+// ── Persistence ───────────────────────────────────────────────────────────
+
+function save() {
+  localStorage.setItem("totalXP",        totalXP);
+  localStorage.setItem("todayTasks",     JSON.stringify(todayTasks));
+  localStorage.setItem("history",        JSON.stringify(history));
+  localStorage.setItem("goalLevel",      goalLevel);
+  localStorage.setItem("dailyTarget",    dailyTarget);
+  localStorage.setItem("darkMode",       darkMode);
+  localStorage.setItem("goalCelebrated", JSON.stringify(goalCelebrated));
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+function getToday() { return new Date().toISOString().slice(0, 10); }
+
+function fmtDate(str) {
+  const parts  = str.split("-");
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return months[+parts[1] - 1] + " " + +parts[2];
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+          .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+
+function addToHistory(date, xp, tasks) {
+  const existing = history.find(function(h) { return h.date === date; });
+  if (existing) {
+    existing.xp += xp;
+    tasks.forEach(function(t) { existing.tasks.push({ name: t.name, xp: t.xp }); });
+  } else {
+    history.push({ date: date, xp: xp, tasks: tasks.map(function(t) { return { name: t.name, xp: t.xp }; }) });
+  }
+}
+
+function calcStreak() {
+  const base = new Date();
+  base.setHours(0, 0, 0, 0);
+  let streak = 0;
+  for (let i = 1; i <= 366; i++) {
+    const d = new Date(base);
+    d.setDate(base.getDate() - i);
+    const key   = d.toISOString().slice(0, 10);
+    const entry = history.find(function(h) { return h.date === key; });
+    if (entry && entry.xp > 0) streak++;
+    else break;
+  }
+  return streak;
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────
+
+let _toastTimer = null;
+function showToast(msg, type) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className   = "toast show" + (type ? " " + type : "");
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function() { el.classList.remove("show"); }, 3200);
+}
+
+// ── Render ────────────────────────────────────────────────────────────────
+
+function render() {
+  const todayEarned = todayTasks.reduce(function(s, t) { return t.done ? s + t.xp : s; }, 0);
+  const grandTotal  = totalXP + todayEarned;
+  const level       = Math.floor(grandTotal / 250);
+  const xpInLevel   = grandTotal % 250;
+  const streak      = calcStreak();
+
+  // Level-up detection
+  if (prevLevel >= 0 && level > prevLevel) {
+    showToast("🎉 Level Up! You reached Level " + level + "!", "levelup");
+  }
+  prevLevel = level;
+
+  // Goal banner
+  const banner = document.getElementById("goalBanner");
+  if (level >= goalLevel) {
+    banner.classList.add("visible");
+    document.getElementById("goalBannerLevel").textContent = goalLevel;
+    if (!goalCelebrated) {
+      goalCelebrated = true;
+      save();
+      showToast("🏆 Goal reached! Level " + goalLevel + "!", "success");
+    }
+  } else {
+    banner.classList.remove("visible");
+  }
+
+  // XP card stats
+  document.getElementById("levelBadge").textContent     = level;
+  document.getElementById("todayEarned").textContent    = "+" + todayEarned;
+  document.getElementById("totalXPDisplay").textContent = grandTotal;
+  document.getElementById("progressFill").style.width   = xpInLevel + "%";
+  document.getElementById("progressLabel").textContent  = xpInLevel + " / 250 XP to Level " + (level + 1);
+  document.getElementById("goalLevelSpan").textContent  = goalLevel;
+
+  // Daily target bar
+  const pct = Math.min(100, Math.round(todayEarned / dailyTarget * 100));
+  document.getElementById("dailyTargetLabel").textContent = dailyTarget;
+  document.getElementById("dailyFill").style.width = pct + "%";
+  document.getElementById("dailyPct").textContent  = pct + "%";
+
+  // Streak
+  const sr = document.getElementById("streakRow");
+  if (streak >= 3) {
+    sr.innerHTML = "🔥 <span class='streak-badge'>" + streak + "-day streak</span>";
+  } else if (streak > 0) {
+    sr.innerHTML = "🔥 <span style='color:var(--text-muted);font-size:13px'>" + streak + "-day streak</span>";
+  } else {
+    sr.innerHTML = "🔥 <span style='color:var(--text-faint);font-size:13px'>No streak yet</span>";
+  }
+
+  // Today's tasks
+  const list  = document.getElementById("taskList");
+  const empty = document.getElementById("emptyState");
+  if (todayTasks.length === 0) {
+    list.innerHTML = "";
+    empty.style.display = "block";
+  } else {
+    empty.style.display = "none";
+    list.innerHTML = todayTasks.map(function(t, i) {
+      return '<div class="task ' + (t.done ? "done" : "") + '">' +
+        '<div class="task-left">' +
+          '<input type="checkbox" ' + (t.done ? "checked" : "") + ' onchange="toggleTask(' + i + ')" />' +
+          '<span class="task-name">' + escHtml(t.name) + '</span>' +
+        '</div>' +
+        '<div class="task-meta">' +
+          '<span class="task-xp">+' + t.xp + ' XP</span>' +
+          '<button class="task-remove" onclick="removeTask(' + i + ')" title="Remove">\xd7</button>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+  }
+
+  // Library
+  document.getElementById("taskLibrary").innerHTML = TASK_LIBRARY.map(function(cat, ci) {
+    return '<div class="category">' +
+      '<div class="category-header" onclick="toggleCat(this)">' +
+        '<span>' + cat.category + '</span>' +
+        '<span class="category-arrow">&#9660;</span>' +
+      '</div>' +
+      '<div class="category-body">' +
+        cat.tasks.map(function(t, ti) {
+          const added = todayTasks.some(function(x) { return x.name === t.name && x.xp === t.xp; });
+          return '<div class="lib-task">' +
+            '<span>' + escHtml(t.name) + '</span>' +
+            '<div class="lib-task-right">' +
+              '<span class="lib-xp">+' + t.xp + ' XP</span>' +
+              '<button class="add-btn" ' + (added ? "disabled" : "") +
+                ' onclick="addLibTask(' + ci + ',' + ti + ')"' +
+                ' title="' + (added ? "Already added" : "Add to today") + '">' +
+                (added ? "&#10003;" : "+") + '</button>' +
+            '</div>' +
+          '</div>';
+        }).join("") +
+      '</div>' +
+    '</div>';
+  }).join("");
+
+  // Rewards
+  document.getElementById("rewardsList").innerHTML = REWARDS.map(function(r) {
+    const unlocked = grandTotal >= r.xp;
+    return '<div class="reward-item">' +
+      '<div class="reward-icon">' + r.icon + '</div>' +
+      '<div class="reward-info">' +
+        '<div class="reward-name">' + r.name + '</div>' +
+        '<div class="reward-xp">' + r.xp + ' XP required</div>' +
+      '</div>' +
+      '<div class="reward-status ' + (unlocked ? "unlocked" : "locked") + '">' +
+        (unlocked ? "&#10003; UNLOCKED" : (r.xp - grandTotal) + " XP away") +
+      '</div>' +
+    '</div>';
+  }).join("");
+
+  // History
+  const hCard = document.getElementById("historyCard");
+  if (!history.length) {
+    hCard.innerHTML = '<div class="history-empty">No history yet. End your first day to see it here.</div>';
+  } else {
+    const sorted = history.slice().sort(function(a, b) { return b.date.localeCompare(a.date); }).slice(0, 14);
+    const maxXP  = Math.max.apply(null, sorted.map(function(h) { return h.xp; }).concat([1]));
+    hCard.innerHTML = sorted.map(function(h) {
+      const barPct = Math.min(100, Math.round(h.xp / maxXP * 100));
+      return '<div class="history-item">' +
+        '<span class="history-date">' + fmtDate(h.date) + '</span>' +
+        '<div class="history-bar-wrap"><div class="history-bar-fill" style="width:' + barPct + '%"></div></div>' +
+        '<span class="history-xp">+' + h.xp + ' XP</span>' +
+      '</div>';
+    }).join("");
+  }
+
+  save();
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────
+
+function toggleTask(i) { todayTasks[i].done = !todayTasks[i].done; render(); }
+function removeTask(i) { todayTasks.splice(i, 1); render(); }
+
+function addLibTask(ci, ti) {
+  const t = TASK_LIBRARY[ci].tasks[ti];
+  todayTasks.push({ name: t.name, xp: t.xp, done: false });
+  render();
+}
+
+function addCustomTask() {
+  const name = document.getElementById("taskName").value.trim();
+  const xp   = parseInt(document.getElementById("taskXP").value, 10);
+  if (!name || !xp || xp <= 0) return;
+  todayTasks.push({ name: name, xp: xp, done: false });
+  document.getElementById("taskName").value = "";
+  document.getElementById("taskXP").value   = "";
+  render();
+}
+
+function resetDay() {
+  const earned = todayTasks.reduce(function(s, t) { return t.done ? s + t.xp : s; }, 0);
+  if (!confirm("Commit +" + earned + " XP and clear today's tasks?")) return;
+  const today = getToday();
+  addToHistory(today, earned, todayTasks.filter(function(t) { return t.done; }));
+  totalXP   += earned;
+  todayTasks = [];
+  lastDate   = today;
+  localStorage.setItem("lastDate", today);
+  render();
+  if (earned > 0) showToast("✓ +" + earned + " XP committed!", "success");
+}
+
+function promptGoal() {
+  const val = prompt("Set goal level (current: " + goalLevel + "):", goalLevel);
+  if (!val) return;
+  const n = parseInt(val, 10);
+  if (isNaN(n) || n < 1) return;
+  goalLevel = n;
+  goalCelebrated = false;
+  save(); render();
+}
+
+function setNewGoal() {
+  const val = parseInt(document.getElementById("newGoalInput").value, 10);
+  if (isNaN(val) || val <= goalLevel) { showToast("Enter a level higher than " + goalLevel); return; }
+  goalLevel = val;
+  goalCelebrated = false;
+  document.getElementById("newGoalInput").value = "";
+  save(); render();
+}
+
+function changeDailyTarget() {
+  const val = prompt("Daily XP target (current: " + dailyTarget + "):", dailyTarget);
+  if (!val) return;
+  const n = parseInt(val, 10);
+  if (isNaN(n) || n < 1) return;
+  dailyTarget = n;
+  save(); render();
+}
+
+function toggleDark() {
+  darkMode = !darkMode;
+  document.body.classList.toggle("dark", darkMode);
+  document.getElementById("darkToggle").textContent = darkMode ? "☀️" : "🌙";
+  save();
+}
+
+function toggleCat(header) {
+  const body  = header.nextElementSibling;
+  const arrow = header.querySelector(".category-arrow");
+  body.classList.toggle("open");
+  arrow.style.transform = body.classList.contains("open") ? "rotate(180deg)" : "";
+}
+
+// ── Export / Import ───────────────────────────────────────────────────────
+
+function exportData() {
+  const payload = {
+    totalXP: totalXP, todayTasks: todayTasks, history: history,
+    goalLevel: goalLevel, dailyTarget: dailyTarget, exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url; a.download = "life-rpg-" + getToday() + ".json"; a.click();
+  URL.revokeObjectURL(url);
+  showToast("✓ Backup exported!", "success");
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const d = JSON.parse(e.target.result);
+      if (typeof d.totalXP !== "number" || !Array.isArray(d.todayTasks)) throw new Error("bad format");
+      if (!confirm("Replace all current data with this backup?")) return;
+      totalXP     = d.totalXP || 0;
+      todayTasks  = Array.isArray(d.todayTasks) ? d.todayTasks : [];
+      history     = Array.isArray(d.history)    ? d.history    : [];
+      goalLevel   = typeof d.goalLevel   === "number" ? d.goalLevel   : 12;
+      dailyTarget = typeof d.dailyTarget === "number" ? d.dailyTarget : 20;
+      goalCelebrated = false; prevLevel = -1;
+      save(); render();
+      showToast("✓ Data imported!", "success");
+    } catch(err) {
+      showToast("⚠ Invalid backup file.");
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = "";
+}
+
+// ── Reset all ─────────────────────────────────────────────────────────────
+
+let _resetPending = false;
+let _resetTimer   = null;
+
+function resetAll() {
+  const btn = document.querySelector(".reset-all button");
+  if (!_resetPending) {
+    _resetPending = true;
+    btn.textContent = "tap again to confirm reset";
+    btn.classList.add("confirm-state");
+    _resetTimer = setTimeout(function() {
+      _resetPending = false;
+      btn.textContent = "reset all data";
+      btn.classList.remove("confirm-state");
+    }, 3000);
+  } else {
+    clearTimeout(_resetTimer);
+    ["totalXP","todayTasks","history","goalLevel","dailyTarget","goalCelebrated","lastDate"]
+      .forEach(function(k) { localStorage.removeItem(k); });
+    totalXP = 0; todayTasks = []; history = []; goalLevel = 12; dailyTarget = 20;
+    goalCelebrated = false; lastDate = getToday(); prevLevel = -1; _resetPending = false;
+    btn.textContent = "reset all data";
+    btn.classList.remove("confirm-state");
+    render();
+  }
+}
+
+// ── PWA service worker ────────────────────────────────────────────────────
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function() {
+    navigator.serviceWorker.register("sw.js").catch(function() {});
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+
+render();
+
+</script>
+</body>
+</html>

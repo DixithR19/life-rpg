@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Life RPG</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      min-height: 100vh;
+      padding: 30px 20px;
+      color: #222;
+    }
+
+    .container {
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 24px;
+      font-size: 28px;
+    }
+
+    /* ── XP Card ── */
+    .xp-card {
+      background: white;
+      border-radius: 20px;
+      padding: 28px;
+      text-align: center;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+
+    .level-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: black;
+      color: white;
+      border-radius: 50%;
+      width: 64px;
+      height: 64px;
+      font-size: 26px;
+      font-weight: bold;
+      margin-bottom: 16px;
+    }
+
+    .xp-row {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 16px;
+    }
+
+    .xp-stat .label {
+      font-size: 11px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .xp-stat .value {
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 10px;
+      background: #eee;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: black;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .progress-label {
+      font-size: 12px;
+      color: #888;
+    }
+
+    /* ── Section title ── */
+    .section-title {
+      font-size: 15px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      margin-top: 4px;
+    }
+
+    /* ── Today's tasks ── */
+    .task {
+      background: white;
+      border-radius: 14px;
+      padding: 14px 18px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      transition: opacity 0.2s;
+    }
+
+    .task.done { opacity: 0.45; }
+
+    .task-left {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .task-left input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: black;
+    }
+
+    .task-name { font-size: 15px; }
+
+    .task-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .task-xp { font-weight: bold; font-size: 14px; }
+
+    .task-remove {
+      background: none;
+      border: none;
+      color: #ccc;
+      cursor: pointer;
+      font-size: 20px;
+      padding: 0 2px;
+      line-height: 1;
+    }
+    .task-remove:hover { color: #e44; }
+
+    .empty-state {
+      text-align: center;
+      color: #aaa;
+      padding: 20px 0;
+      font-size: 14px;
+    }
+
+    .day-reset {
+      text-align: center;
+      margin: 14px 0 24px;
+    }
+
+    .day-reset button {
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 8px 20px;
+      font-size: 13px;
+      cursor: pointer;
+      color: #888;
+    }
+    .day-reset button:hover { border-color: #e44; color: #e44; }
+
+    /* ── Task Library ── */
+    .category {
+      background: white;
+      border-radius: 14px;
+      margin-bottom: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+
+    .category-header {
+      padding: 14px 18px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .category-header:hover { background: #fafafa; }
+
+    .category-arrow {
+      font-size: 11px;
+      color: #aaa;
+      transition: transform 0.2s;
+    }
+
+    .category-body {
+      display: none;
+      border-top: 1px solid #f0f0f0;
+    }
+    .category-body.open { display: block; }
+
+    .lib-task {
+      padding: 11px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #f8f8f8;
+      font-size: 14px;
+    }
+    .lib-task:last-child { border-bottom: none; }
+
+    .lib-task-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .lib-xp { font-size: 13px; color: #555; font-weight: bold; }
+
+    .add-btn {
+      background: black;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      width: 28px;
+      height: 28px;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .add-btn:hover { background: #333; }
+    .add-btn:disabled { background: #ccc; cursor: default; }
+
+    /* ── Custom task ── */
+    .custom-card {
+      background: white;
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      margin-bottom: 24px;
+    }
+
+    .custom-card .inner-label {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #555;
+    }
+
+    .custom-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .custom-row input {
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      font-size: 14px;
+    }
+    .custom-row input:focus { outline: none; border-color: #999; }
+    .custom-row input[type="number"] { width: 72px; flex: none; }
+
+    .custom-row button {
+      background: black;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .custom-row button:hover { background: #333; }
+
+    /* ── Rewards ── */
+    .rewards-card {
+      background: white;
+      border-radius: 14px;
+      padding: 4px 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      margin-bottom: 40px;
+    }
+
+    .reward-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 13px 18px;
+      border-bottom: 1px solid #f5f5f5;
+      font-size: 14px;
+    }
+    .reward-item:last-child { border-bottom: none; }
+
+    .reward-icon { font-size: 22px; width: 28px; text-align: center; }
+
+    .reward-info { flex: 1; }
+    .reward-name { font-weight: 600; }
+    .reward-xp { font-size: 12px; color: #aaa; margin-top: 2px; }
+
+    .reward-status { font-size: 12px; font-weight: bold; text-align: right; }
+    .reward-status.unlocked { color: #2a9d2a; }
+    .reward-status.locked { color: #bbb; }
+
+    /* ── Danger zone ── */
+    .reset-all {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .reset-all button {
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #aaa;
+      cursor: pointer;
+      padding: 6px 16px;
+      transition: all 0.2s;
+    }
+    .reset-all button:hover { border-color: #e44; color: #e44; }
+    .reset-all button.confirm-state {
+      border-color: #e44;
+      color: white;
+      background: #e44;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+
+  <h1>⚡ Life RPG</h1>
+
+  <!-- XP / Level Card -->
+  <div class="xp-card">
+    <div class="level-badge" id="levelBadge">0</div>
+    <div class="xp-row">
+      <div class="xp-stat">
+        <div class="label">Today's XP</div>
+        <div class="value" id="todayEarned">+0</div>
+      </div>
+      <div class="xp-stat">
+        <div class="label">Total XP</div>
+        <div class="value" id="totalXPDisplay">0</div>
+      </div>
+      <div class="xp-stat">
+        <div class="label">Goal</div>
+        <div class="value">Lv 12</div>
+      </div>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-label" id="progressLabel">0 / 100 XP to next level</div>
+  </div>
+
+  <!-- Today's Plan -->
+  <div class="section-title">📋 Today's Plan</div>
+  <div id="taskList"></div>
+  <div class="empty-state" id="emptyState">Add tasks from the library below.</div>
+
+  <div class="day-reset">
+    <button onclick="resetDay()">✓ End Day &amp; Commit XP</button>
+  </div>
+
+  <!-- Task Library -->
+  <div class="section-title">📚 Task Library</div>
+  <div id="taskLibrary" style="margin-bottom:24px"></div>
+
+  <!-- Custom Task -->
+  <div class="section-title">➕ Custom Task</div>
+  <div class="custom-card">
+    <div class="inner-label">One-off task</div>
+    <div class="custom-row">
+      <input id="taskName" placeholder="Task name" />
+      <input id="taskXP" type="number" placeholder="XP" min="1" />
+      <button onclick="addCustomTask()">Add</button>
+    </div>
+  </div>
+
+  <!-- Rewards -->
+  <div class="section-title">🏆 Rewards</div>
+  <div class="rewards-card" id="rewardsList"></div>
+
+  <div class="reset-all">
+    <button onclick="resetAll()">reset all data</button>
+  </div>
+
+</div>
+
+<script>
+
+// ── Task Library ──────────────────────────────────────────────────────────
+
+const TASK_LIBRARY = [
+  {
+    category: "💼 Work / Career",
+    tasks: [
+      { name: "Deep work session (90 min)",   xp: 5   },
+      { name: "Hard project completed",        xp: 30  },
+      { name: "Positive feedback received",    xp: 10  },
+      { name: "Strong quarter",                xp: 75  },
+      { name: "Promotion / major raise",       xp: 300 },
+    ]
+  },
+  {
+    category: "💻 Job Switch",
+    tasks: [
+      { name: "Resume update",           xp: 10  },
+      { name: "Networking outreach",     xp: 5   },
+      { name: "Job application",         xp: 3   },
+      { name: "Mock interview",          xp: 10  },
+      { name: "Final round interview",   xp: 50  },
+      { name: "Offer signed",            xp: 250 },
+    ]
+  },
+  {
+    category: "💪 Fitness",
+    tasks: [
+      { name: "Workout",                  xp: 8  },
+      { name: "Protein goal hit",         xp: 4  },
+      { name: "7-day consistency streak", xp: 20 },
+      { name: "30-day streak",            xp: 50 },
+    ]
+  },
+  {
+    category: "🎧 DJ",
+    tasks: [
+      { name: "30 min practice",         xp: 5  },
+      { name: "60 min focused practice", xp: 10 },
+      { name: "Learn new concept",       xp: 8  },
+      { name: "Record mix",              xp: 20 },
+      { name: "First clean mix",         xp: 50 },
+    ]
+  },
+  {
+    category: "💰 Investing",
+    tasks: [
+      { name: "Monthly contribution target hit",   xp: 30  },
+      { name: "No emotional trading for month",    xp: 20  },
+      { name: "$35k invested milestone",           xp: 50  },
+      { name: "$50k invested milestone",           xp: 75  },
+      { name: "$75k invested milestone",           xp: 100 },
+      { name: "$100k portfolio milestone",         xp: 200 },
+    ]
+  },
+  {
+    category: "📚 Reading",
+    tasks: [
+      { name: "Read 10 min",           xp: 3  },
+      { name: "Read 20 min",           xp: 5  },
+      { name: "Read 30+ min",          xp: 8  },
+      { name: "Finish 1 chapter",      xp: 10 },
+      { name: "Finish a book",         xp: 40 },
+      { name: "7-day reading streak",  xp: 15 },
+      { name: "30-day reading streak", xp: 40 },
+    ]
+  }
+];
+
+const REWARDS = [
+  { name: "Nice dinner / small reward",  xp: 100,  icon: "🍽️" },
+  { name: "Birkenstock or Sunglasses",   xp: 250,  icon: "🕶️" },
+  { name: "Onitsuka Tiger sneakers",     xp: 400,  icon: "👟" },
+  { name: "On training shoes",           xp: 550,  icon: "🏃" },
+  { name: "TAG Heuer watch",             xp: 1000, icon: "⌚" },
+];
+
+// ── State ─────────────────────────────────────────────────────────────────
+
+// totalXP = committed XP from previous days (updated on "End Day")
+let totalXP    = Number(localStorage.getItem("totalXP")) || 0;
+let todayTasks = JSON.parse(localStorage.getItem("todayTasks")) || [];
+
+// ── Persistence ───────────────────────────────────────────────────────────
+
+function save() {
+  localStorage.setItem("todayTasks", JSON.stringify(todayTasks));
+  localStorage.setItem("totalXP", totalXP);
+}
+
+// ── Render ────────────────────────────────────────────────────────────────
+
+function render() {
+  const todayEarned = todayTasks.reduce((s, t) => t.done ? s + t.xp : s, 0);
+  const grandTotal  = totalXP + todayEarned;
+  const level       = Math.floor(grandTotal / 100);
+  const xpInLevel   = grandTotal % 100;
+
+  // Stats
+  document.getElementById("levelBadge").textContent      = level;
+  document.getElementById("todayEarned").textContent     = "+" + todayEarned;
+  document.getElementById("totalXPDisplay").textContent  = grandTotal;
+  document.getElementById("progressFill").style.width    = xpInLevel + "%";
+  document.getElementById("progressLabel").textContent   =
+    xpInLevel + " / 100 XP to Level " + (level + 1);
+
+  // Today's tasks
+  const list  = document.getElementById("taskList");
+  const empty = document.getElementById("emptyState");
+
+  if (todayTasks.length === 0) {
+    list.innerHTML = "";
+    empty.style.display = "block";
+  } else {
+    empty.style.display = "none";
+    list.innerHTML = todayTasks.map((task, i) => `
+      <div class="task ${task.done ? "done" : ""}">
+        <div class="task-left">
+          <input type="checkbox" ${task.done ? "checked" : ""}
+            onchange="toggleTask(${i})" />
+          <span class="task-name">${escHtml(task.name)}</span>
+        </div>
+        <div class="task-meta">
+          <span class="task-xp">+${task.xp} XP</span>
+          <button class="task-remove" onclick="removeTask(${i})" title="Remove">×</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  // Library
+  document.getElementById("taskLibrary").innerHTML = TASK_LIBRARY.map((cat, ci) => `
+    <div class="category">
+      <div class="category-header" onclick="toggleCat(this)">
+        <span>${cat.category}</span>
+        <span class="category-arrow">▼</span>
+      </div>
+      <div class="category-body">
+        ${cat.tasks.map((t, ti) => {
+          const added = todayTasks.some(x => x.name === t.name && x.xp === t.xp);
+          return `
+            <div class="lib-task">
+              <span>${escHtml(t.name)}</span>
+              <div class="lib-task-right">
+                <span class="lib-xp">+${t.xp} XP</span>
+                <button class="add-btn" ${added ? "disabled" : ""}
+                  onclick="addLibTask(${ci},${ti})"
+                  title="${added ? "Already added" : "Add to today"}"
+                >${added ? "✓" : "+"}</button>
+              </div>
+            </div>`;
+        }).join("")}
+      </div>
+    </div>
+  `).join("");
+
+  // Rewards
+  document.getElementById("rewardsList").innerHTML = REWARDS.map(r => {
+    const unlocked = grandTotal >= r.xp;
+    return `
+      <div class="reward-item">
+        <div class="reward-icon">${r.icon}</div>
+        <div class="reward-info">
+          <div class="reward-name">${r.name}</div>
+          <div class="reward-xp">${r.xp} XP required</div>
+        </div>
+        <div class="reward-status ${unlocked ? "unlocked" : "locked"}">
+          ${unlocked ? "✓ UNLOCKED" : (r.xp - grandTotal) + " XP away"}
+        </div>
+      </div>`;
+  }).join("");
+
+  save();
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────
+
+function toggleTask(i) {
+  todayTasks[i].done = !todayTasks[i].done;
+  render();
+}
+
+function removeTask(i) {
+  todayTasks.splice(i, 1);
+  render();
+}
+
+function addLibTask(ci, ti) {
+  const t = TASK_LIBRARY[ci].tasks[ti];
+  todayTasks.push({ name: t.name, xp: t.xp, done: false });
+  render();
+}
+
+function addCustomTask() {
+  const name = document.getElementById("taskName").value.trim();
+  const xp   = Number(document.getElementById("taskXP").value);
+  if (!name || !xp || xp <= 0) return;
+  todayTasks.push({ name, xp, done: false });
+  document.getElementById("taskName").value = "";
+  document.getElementById("taskXP").value   = "";
+  render();
+}
+
+function resetDay() {
+  const earned = todayTasks.reduce((s, t) => t.done ? s + t.xp : s, 0);
+  if (!confirm(`Commit +${earned} XP and clear today's tasks?`)) return;
+  totalXP   += earned;
+  todayTasks = [];
+  render();
+}
+
+let resetPending = false;
+let resetTimer   = null;
+
+function resetAll() {
+  const btn = document.querySelector(".reset-all button");
+  if (!resetPending) {
+    resetPending = true;
+    btn.textContent = "tap again to confirm reset";
+    btn.classList.add("confirm-state");
+    resetTimer = setTimeout(() => {
+      resetPending = false;
+      btn.textContent = "reset all data";
+      btn.classList.remove("confirm-state");
+    }, 3000);
+  } else {
+    clearTimeout(resetTimer);
+    resetPending = false;
+    localStorage.removeItem("totalXP");
+    localStorage.removeItem("todayTasks");
+    totalXP    = 0;
+    todayTasks = [];
+    btn.textContent = "reset all data";
+    btn.classList.remove("confirm-state");
+    render();
+  }
+}
+
+function toggleCat(header) {
+  const body  = header.nextElementSibling;
+  const arrow = header.querySelector(".category-arrow");
+  body.classList.toggle("open");
+  arrow.style.transform = body.classList.contains("open") ? "rotate(180deg)" : "";
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+            .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+
+render();
+
+</script>
+</body>
+</html>
